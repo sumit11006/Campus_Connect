@@ -1,0 +1,74 @@
+name: CampusConnect CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-tests:
+    name: Backend API Tests
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run Backend Integration Tests
+        env:
+          MONGO_URI: mongodb://localhost:27017/campusconnect_ci
+          JWT_SECRET: ci_secret_key_test_12345
+          NODE_ENV: test
+        run: |
+          cd backend
+          npm test
+
+  flutter-analyze:
+    name: Flutter Lint & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Flutter Dependencies
+        run: |
+          cd flutter_app
+          flutter pub get
+
+      - name: Run Flutter Analyzer
+        run: |
+          cd flutter_app
+          flutter analyze
+
+      - name: Run Flutter Widget & Unit Tests
+        run: |
+          cd flutter_app
+          flutter test
