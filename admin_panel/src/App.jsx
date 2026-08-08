@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import LoginPage from './pages/LoginPage';
@@ -74,12 +74,28 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-container">
-        <Sidebar onLogout={handleLogout} />
-        <div className="main-content">
-          <Header user={user} theme={theme} themeLabel={themeLabels[theme]} onCycleTheme={cycleTheme} />
-          <main className="page-body">
-            <Routes>
+      <AuthenticatedShell
+        user={user}
+        theme={theme}
+        themeLabels={themeLabels}
+        cycleTheme={cycleTheme}
+        handleLogout={handleLogout}
+      />
+    </BrowserRouter>
+  );
+}
+
+function AuthenticatedShell({ user, theme, themeLabels, cycleTheme, handleLogout }) {
+  const location = useLocation();
+
+  return (
+    <div className="app-container">
+      <Sidebar onLogout={handleLogout} />
+      <div className="main-content">
+        <Header user={user} theme={theme} themeLabel={themeLabels[theme]} onCycleTheme={cycleTheme} />
+        <main className="page-body">
+          <div className="page-shell" key={location.pathname}>
+            <Routes location={location}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/users"     element={<UsersPage />} />
               <Route path="/clubs"     element={<ClubsPage />} />
@@ -88,9 +104,9 @@ export default function App() {
               <Route path="/settings"  element={<SettingsPage />} />
               <Route path="*"          element={<Navigate to="/dashboard" replace />} />
             </Routes>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
-    </BrowserRouter>
+    </div>
   );
 }

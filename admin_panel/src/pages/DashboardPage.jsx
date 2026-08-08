@@ -257,7 +257,6 @@ export default function DashboardPage() {
               borderBottom: '1px solid var(--border-color)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'between',
               justifyContent: 'space-between'
             }}>
               <h3 className="section-title">All Recent Activities</h3>
