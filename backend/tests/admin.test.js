@@ -16,19 +16,26 @@ describe('Admin Endpoints', () => {
     }
     await User.deleteMany({ email: /admintest.*@example\.com/ });
 
-    // Register Super Admin
+    // Register a regular user first, then promote and log in as admin for the test.
     const adminRes = await request(app)
       .post('/api/auth/register')
       .send({
         name: 'Super Admin',
         email: 'admintest1@example.com',
         password: 'password123',
-        role: 'admin',
+        role: 'student',
       });
-    adminToken = adminRes.body.token;
 
-    // Manually promote role in DB if register defaults to student
+    // Promote the account in the database so admin-only routes can be tested.
     await User.findByIdAndUpdate(adminRes.body.user._id, { role: 'admin' });
+
+    const loginRes = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'admintest1@example.com',
+        password: 'password123',
+      });
+    adminToken = loginRes.body.token;
 
     // Register regular student
     const studentRes = await request(app)

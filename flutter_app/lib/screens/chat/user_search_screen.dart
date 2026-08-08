@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import '../../core/constants.dart';
 import '../../models/user.dart';
-import '../../services/api_service.dart';
 import '../../services/chat_service.dart';
 import '../../providers/auth_provider.dart';
 import 'chat_screen.dart';
@@ -30,19 +28,23 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
     try {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.dio.get('/users/search?q=$query');
-      
+
       if (response.data['success'] == true) {
         final list = response.data['users'] as List;
+        if (!mounted) return;
         setState(() {
           _users = list.map((e) => User.fromJson(e)).toList();
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to search users')),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
