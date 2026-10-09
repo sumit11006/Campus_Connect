@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/message.dart';
+import '../core/theme.dart';
 
 class ChatBubble extends StatelessWidget {
   final ChatMessage message;
@@ -20,21 +21,23 @@ class ChatBubble extends StatelessWidget {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: AppTheme.spacingMd),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
           color: isMe
               ? theme.colorScheme.primary
-              : theme.colorScheme.surfaceContainerHighest,
+              : theme.colorScheme.surface,
+          boxShadow: isMe ? [] : AppTheme.shadowSubtle,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMe ? 16 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 16),
+            topLeft: const Radius.circular(AppTheme.radiusLg),
+            topRight: const Radius.circular(AppTheme.radiusLg),
+            bottomLeft: Radius.circular(isMe ? AppTheme.radiusLg : 4),
+            bottomRight: Radius.circular(isMe ? 4 : AppTheme.radiusLg),
           ),
+          border: isMe ? null : Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment:
@@ -44,32 +47,31 @@ class ChatBubble extends StatelessWidget {
               Text(
                 message.senderName,
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
             ],
             Text(
               message.content,
-              style: TextStyle(
-                color: isMe
-                    ? Colors.white
-                    : theme.colorScheme.onSurfaceVariant,
-                fontSize: 14,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isMe ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                height: 1.4,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               message.createdAt != null
                   ? timeFormat.format(message.createdAt!)
                   : '',
-              style: TextStyle(
+              style: theme.textTheme.labelSmall?.copyWith(
                 fontSize: 10,
+                fontWeight: FontWeight.w600,
                 color: isMe
-                    ? Colors.white70
-                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    ? theme.colorScheme.onPrimary.withValues(alpha: 0.7)
+                    : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

@@ -35,7 +35,7 @@ const getAllEvents = async (req, res, next) => {
     const events = await Event.find(query)
       .populate('createdBy', 'name email avatarUrl')
       .populate('clubId', 'name category bannerUrl')
-      .sort({ date: 1 });
+      .sort({ isPinned: -1, date: 1 });
 
     res.status(200).json({
       success: true,
@@ -112,6 +112,65 @@ const createEvent = async (req, res, next) => {
       message: 'Event created successfully',
       event,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/events/:id — Update event (creator or admin only)
+const updateEvent = async (req, res, next) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    const isOwner = event.createdBy.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to edit this event.' });
+    }
+
+    const { title, description, date, location, imageUrl, capacity, priority, isPinned } = req.body;
+    if (title) event.title = title;
+    if (description) event.description = description;
+    if (date) event.date = date;
+    if (location) event.location = location;
+    if (imageUrl !== undefined) event.imageUrl = imageUrl;
+    if (capacity !== undefined) event.capacity = capacity ? parseInt(capacity) : null;
+    if (priority !== undefined) event.priority = priority;
+    if (isPinned !== undefined && (req.user.role === 'admin' || req.user.role === 'faculty')) {
+      event.isPinned = isPinned;
+    }
+
+    await event.save();
+
+    res.status(200).json({ success: true, message: 'Event updated successfully', event });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE /api/events/:id — Delete event (creator or admin only)
+const deleteEvent = async (req, res, next) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+    const isOwner = event.createdBy.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this event.' });
+    }
+
+    await Event.findByIdAndDelete(req.params.id);
+    // Also remove registrations
+    const Registration = require('../models/Registration');
+    await Registration.deleteMany({ eventId: req.params.id });
+
+    res.status(200).json({ success: true, message: 'Event deleted successfully' });
   } catch (error) {
     next(error);
   }
@@ -222,6 +281,8 @@ module.exports = {
   getAllEvents,
   getEventById,
   createEvent,
+  updateEvent,
+  deleteEvent,
   registerForEvent,
   unregisterFromEvent,
   getEventRegistrants,

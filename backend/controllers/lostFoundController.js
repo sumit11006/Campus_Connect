@@ -64,6 +64,16 @@ const resolveItem = async (req, res, next) => {
       });
     }
 
+    // Only the reporter or admin can resolve
+    const isOwner = item.reporterId.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only resolve items you reported.',
+      });
+    }
+
     item.isResolved = true;
     await item.save();
 
@@ -77,8 +87,41 @@ const resolveItem = async (req, res, next) => {
   }
 };
 
+// DELETE /api/lostfound/:id
+const deleteItem = async (req, res, next) => {
+  try {
+    const item = await LostFound.findById(req.params.id);
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found',
+      });
+    }
+
+    // Only the reporter or admin can delete
+    const isOwner = item.reporterId.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete items you reported.',
+      });
+    }
+
+    await LostFound.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Item deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getLostFoundItems,
   createLostFoundItem,
   resolveItem,
+  deleteItem,
 };

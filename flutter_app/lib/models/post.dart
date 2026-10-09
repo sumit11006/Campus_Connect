@@ -12,6 +12,8 @@ class Post {
   final int commentsCount;
   final bool isLiked;
   final DateTime? createdAt;
+  final bool isPinned;
+  final String category;
 
   Post({
     required this.id,
@@ -27,6 +29,8 @@ class Post {
     this.commentsCount = 0,
     this.isLiked = false,
     this.createdAt,
+    this.isPinned = false,
+    this.category = 'general',
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -65,6 +69,8 @@ class Post {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])
           : null,
+      isPinned: json['isPinned'] ?? false,
+      category: json['category'] ?? 'general',
     );
   }
 
@@ -72,6 +78,8 @@ class Post {
     int? likesCount,
     int? commentsCount,
     bool? isLiked,
+    bool? isPinned,
+    String? category,
   }) {
     return Post(
       id: id,
@@ -87,6 +95,8 @@ class Post {
       commentsCount: commentsCount ?? this.commentsCount,
       isLiked: isLiked ?? this.isLiked,
       createdAt: createdAt,
+      isPinned: isPinned ?? this.isPinned,
+      category: category ?? this.category,
     );
   }
 }

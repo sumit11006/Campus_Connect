@@ -33,6 +33,16 @@ export default function PostsPage() {
     } catch (err) { showToast(err.response?.data?.message || 'Failed to delete post', 'error'); }
   };
 
+  const handleTogglePinPost = async (post) => {
+    try {
+      const res = await api.put(`/posts/${post._id}`, { isPinned: !post.isPinned });
+      if (res.data.success) {
+        setPosts(posts.map(p => p._id === post._id ? { ...p, isPinned: !post.isPinned } : p));
+        showToast(post.isPinned ? 'Post unpinned' : 'Post pinned');
+      }
+    } catch (err) { showToast(err.response?.data?.message || 'Failed to toggle pin', 'error'); }
+  };
+
   // Posts use authorId (populated) not author
   const getAuthor = (post) => post.authorId || post.author || null;
 
@@ -148,6 +158,7 @@ export default function PostsPage() {
                   </td>
                   <td style={{ maxWidth: '280px' }}>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {post.isPinned && <span title="Pinned" style={{ marginRight: 6 }}>📌</span>}
                       {post.content || '(no content)'}
                     </div>
                   </td>
@@ -166,9 +177,14 @@ export default function PostsPage() {
                     {new Date(post.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                   <td>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDeletePost(post._id)}>
-                      🗑 Delete
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button className="btn btn-sm btn-outline" onClick={() => handleTogglePinPost(post)}>
+                        {post.isPinned ? 'Unpin' : '📌 Pin'}
+                      </button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDeletePost(post._id)}>
+                        🗑 Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

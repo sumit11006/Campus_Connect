@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../feed/feed_screen.dart';
+import 'student_home_screen.dart';
 import '../clubs/clubs_list_screen.dart';
 import '../events/events_list_screen.dart';
 import '../chat/conversations_screen.dart';
@@ -18,7 +18,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
-    FeedScreen(),
+    StudentHomeScreen(),
     ClubsListScreen(),
     EventsListScreen(),
     ConversationsScreen(),
@@ -41,9 +41,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dynamic_feed_outlined),
-            selectedIcon: Icon(Icons.dynamic_feed),
-            label: 'Feed',
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
           ),
           NavigationDestination(
             icon: Icon(Icons.groups_outlined),

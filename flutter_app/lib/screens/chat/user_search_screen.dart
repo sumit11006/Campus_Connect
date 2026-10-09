@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 import '../../models/user.dart';
 import '../../services/chat_service.dart';
 import '../../providers/auth_provider.dart';
@@ -77,13 +79,17 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: TextField(
           controller: _searchController,
           autofocus: true,
-          decoration: const InputDecoration(
+          style: theme.textTheme.titleMedium,
+          decoration: InputDecoration(
             hintText: 'Search by name or email...',
+            hintStyle: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             border: InputBorder.none,
             focusedBorder: InputBorder.none,
             enabledBorder: InputBorder.none,
@@ -94,9 +100,28 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _users.isEmpty
-              ? const Center(child: Text('Search for a user to start a chat.'))
-              : ListView.builder(
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.person_search_rounded, size: 64, color: theme.colorScheme.outlineVariant),
+                      const SizedBox(height: AppTheme.spacingMd),
+                      Text(
+                        'Find someone',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: AppTheme.spacingXs),
+                      Text(
+                        'Search for a user to start a chat.',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(AppTheme.spacingMd),
                   itemCount: _users.length,
+                  separatorBuilder: (ctx, i) => Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2)),
                   itemBuilder: (context, index) {
                     final user = _users[index];
                     
@@ -108,19 +133,22 @@ class _UserSearchScreenState extends ConsumerState<UserSearchScreen> {
                     }
 
                     return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingSm, vertical: AppTheme.spacingXs),
                       leading: CircleAvatar(
+                        backgroundColor: theme.colorScheme.primaryContainer,
                         backgroundImage: avatarFullUrl.isNotEmpty
-                            ? NetworkImage(avatarFullUrl)
+                            ? CachedNetworkImageProvider(avatarFullUrl)
                             : null,
                         child: avatarFullUrl.isEmpty
-                            ? Text(user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : 'U')
+                            ? Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                              )
                             : null,
                       ),
-                      title: Text(user.name),
-                      subtitle: Text(user.email),
-                      trailing: const Icon(Icons.chat_bubble_outline),
+                      title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text(user.email, style: theme.textTheme.bodySmall),
+                      trailing: Icon(Icons.chat_bubble_outline_rounded, color: theme.colorScheme.primary),
                       onTap: () => _startChat(user),
                     );
                   },

@@ -33,6 +33,16 @@ export default function EventsPage() {
     } catch (err) { showToast(err.response?.data?.message || 'Failed to delete event', 'error'); }
   };
 
+  const handleTogglePinEvent = async (event) => {
+    try {
+      const res = await api.put(`/events/${event._id}`, { isPinned: !event.isPinned });
+      if (res.data.success) {
+        setEvents(events.map(e => e._id === event._id ? { ...e, isPinned: !event.isPinned } : e));
+        showToast(event.isPinned ? 'Event unpinned' : 'Event pinned');
+      }
+    } catch (err) { showToast(err.response?.data?.message || 'Failed to toggle pin', 'error'); }
+  };
+
   const filtered = events.filter(e =>
     e.title.toLowerCase().includes(search.toLowerCase()) ||
     (e.location || '').toLowerCase().includes(search.toLowerCase())
@@ -108,7 +118,10 @@ export default function EventsPage() {
               const isUpcoming = new Date(event.date) > new Date();
               return (
                 <tr key={event._id}>
-                  <td style={{ fontWeight: 700 }}>{event.title}</td>
+                  <td style={{ fontWeight: 700 }}>
+                    {event.isPinned && <span title="Pinned" style={{ marginRight: 6 }}>📌</span>}
+                    {event.title}
+                  </td>
                   <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                     {new Date(event.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                     <br/>
@@ -123,9 +136,14 @@ export default function EventsPage() {
                     </span>
                   </td>
                   <td>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDeleteEvent(event._id)}>
-                      🗑 Delete
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button className="btn btn-sm btn-outline" onClick={() => handleTogglePinEvent(event)}>
+                        {event.isPinned ? 'Unpin' : '📌 Pin'}
+                      </button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDeleteEvent(event._id)}>
+                        🗑 Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

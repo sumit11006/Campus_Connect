@@ -7,6 +7,7 @@ const {
   getAllClubs,
   getClubById,
   createClub,
+  updateClub,
   joinClub,
   leaveClub,
   getClubMembers,
@@ -19,14 +20,17 @@ router.get('/', optionalAuth, getAllClubs);
 // GET /api/clubs/:id — Get details
 router.get('/:id', optionalAuth, getClubById);
 
-// POST /api/clubs — Create club (faculty, clubAdmin, admin)
+// POST /api/clubs — Create club (faculty, admin only)
 router.post(
   '/',
   auth,
-  roleCheck(ROLES.FACULTY, ROLES.CLUB_ADMIN, ROLES.ADMIN, ROLES.STUDENT), // allow student creation which elevates to clubAdmin
+  roleCheck(ROLES.FACULTY, ROLES.ADMIN),
   createClubValidation,
   createClub
 );
+
+// PUT /api/clubs/:id — Update club
+router.put('/:id', auth, updateClub);
 
 // POST /api/clubs/:id/join — Join club
 router.post('/:id/join', auth, joinClub);

@@ -45,6 +45,15 @@ const eventSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    priority: {
+      type: String,
+      enum: ['normal', 'featured', 'urgent'],
+      default: 'normal',
+    },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

@@ -12,6 +12,8 @@ class CampusEvent {
   final int? capacity;
   final int registrationCount;
   final DateTime? createdAt;
+  final bool isPinned;
+  final String priority;
 
   CampusEvent({
     required this.id,
@@ -27,6 +29,8 @@ class CampusEvent {
     this.capacity,
     this.registrationCount = 0,
     this.createdAt,
+    this.isPinned = false,
+    this.priority = 'normal',
   });
 
   factory CampusEvent.fromJson(Map<String, dynamic> json) {
@@ -65,6 +69,8 @@ class CampusEvent {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])
           : null,
+      isPinned: json['isPinned'] ?? false,
+      priority: json['priority'] ?? 'normal',
     );
   }
 

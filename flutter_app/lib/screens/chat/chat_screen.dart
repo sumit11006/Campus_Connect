@@ -4,6 +4,7 @@ import '../../models/message.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/chat_bubble.dart';
+import '../../core/theme.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final String conversationId;
@@ -117,6 +118,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = ref.watch(authProvider).user?.id ?? '';
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -127,7 +129,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             if (_isTyping)
               Text(
                 '$_typingUser is typing...',
-                style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
           ],
         ),
@@ -138,32 +143,55 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
-                    ? Center(child: Text('Error: $_errorMessage\n\nMake sure your backend is running and you restarted it.', textAlign: TextAlign.center))
+                    ? Center(
+                        child: Text(
+                          'Error: $_errorMessage\n\nMake sure your backend is running.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      )
                     : _messages.isEmpty
-                        ? const Center(child: Text('Say hi! Start the conversation.'))
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = _messages[index];
-                          final isMe = msg.senderId == currentUserId;
-                          return ChatBubble(
-                            message: msg,
-                            isMe: isMe,
-                          );
-                        },
-                      ),
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.waving_hand_rounded, size: 48, color: theme.colorScheme.outlineVariant),
+                                const SizedBox(height: AppTheme.spacingMd),
+                                Text(
+                                  'Say hi!',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
+                            itemCount: _messages.length,
+                            itemBuilder: (context, index) {
+                              final msg = _messages[index];
+                              final isMe = msg.senderId == currentUserId;
+                              return ChatBubble(
+                                message: msg,
+                                isMe: isMe,
+                              );
+                            },
+                          ),
           ),
+          
+          // Chat Input Area
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(AppTheme.spacingMd),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
+              color: theme.colorScheme.surface,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
+                  blurRadius: 10,
+                  offset: const Offset(0, -4),
                 ),
               ],
             ),
@@ -171,26 +199,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      textCapitalization: TextCapitalization.sentences,
-                      onChanged: (text) {
-                        final chatService = ref.read(chatServiceProvider);
-                        chatService.sendTypingStatus(
-                            widget.conversationId, text.isNotEmpty);
-                      },
-                      decoration: const InputDecoration(
-                        hintText: 'Type a message...',
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                      ),
+                      child: TextField(
+                        controller: _messageController,
+                        textCapitalization: TextCapitalization.sentences,
+                        onChanged: (text) {
+                          final chatService = ref.read(chatServiceProvider);
+                          chatService.sendTypingStatus(
+                              widget.conversationId, text.isNotEmpty);
+                        },
+                        decoration: const InputDecoration(
+                          hintText: 'Type a message...',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: AppTheme.spacingLg, vertical: 14),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  FloatingActionButton.small(
-                    onPressed: _sendMessage,
-                    elevation: 0,
-                    child: const Icon(Icons.send),
+                  const SizedBox(width: AppTheme.spacingSm),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.send_rounded, color: theme.colorScheme.onPrimary),
+                      onPressed: _sendMessage,
+                    ),
                   ),
                 ],
               ),

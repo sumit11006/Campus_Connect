@@ -6,6 +6,7 @@ const {
   getAllPosts,
   getPostById,
   createPost,
+  updatePost,
   deletePost,
   toggleLike,
   addComment,
@@ -28,6 +29,9 @@ router.post(
   createPostValidation,
   createPost
 );
+
+// PUT /api/posts/:id — Update post
+router.put('/:id', auth, updatePost);
 
 // DELETE /api/posts/:id — Delete post
 router.delete('/:id', auth, deletePost);

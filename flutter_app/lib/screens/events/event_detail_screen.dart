@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/event.dart';
 import '../../providers/event_provider.dart';
+import '../../core/theme.dart';
+import '../../design_system/app_button.dart';
+import '../../design_system/app_card.dart';
 
 class EventDetailScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -18,6 +22,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   CampusEvent? _event;
   bool _isRegistered = false;
   String? _error;
+  bool _isActionLoading = false;
 
   @override
   void initState() {
@@ -51,6 +56,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Future<void> _toggleRegistration() async {
     if (_event == null) return;
     final service = ref.read(eventServiceProvider);
+
+    setState(() {
+      _isActionLoading = true;
+    });
 
     try {
       if (_isRegistered) {
@@ -100,6 +109,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           SnackBar(content: Text(e.toString())),
         );
       }
+    } finally {
+      setState(() {
+        _isActionLoading = false;
+      });
     }
   }
 
@@ -124,111 +137,192 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_event!.title),
+        title: const Text('Event Details'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(bottom: AppTheme.spacing2xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Date & Time Banner Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary,
-                  ],
+            // Hero Section
+            if (_event!.imageUrl.isNotEmpty)
+              Container(
+                height: 240,
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                  boxShadow: AppTheme.shadowSubtle,
                 ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                  child: CachedNetworkImage(
+                    imageUrl: _event!.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                    errorWidget: (context, url, error) => _buildFallbackHero(theme),
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                child: _buildFallbackHero(theme),
               ),
+            
+            const SizedBox(height: AppTheme.spacingLg),
+
+            // Content
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (_event!.clubName != null) ...[
-                    Chip(
-                      label: Text(
-                        _event!.clubName!,
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                       ),
-                      backgroundColor: Colors.white24,
+                      child: Text(
+                        _event!.clubName!.toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppTheme.spacingSm),
                   ],
                   Text(
                     _event!.title,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.access_time, color: Colors.white70, size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        dateFormat.format(_event!.date),
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
-                      ),
-                    ],
+                  const SizedBox(height: AppTheme.spacingMd),
+
+                  // Metadata Cards
+                  AppCard(
+                    padding: const EdgeInsets.all(AppTheme.spacingMd),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                              ),
+                              child: Icon(Icons.calendar_today_rounded, color: theme.colorScheme.secondary, size: 20),
+                            ),
+                            const SizedBox(width: AppTheme.spacingMd),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Date & Time', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                  Text(dateFormat.format(_event!.date), style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppTheme.spacingMd),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                              ),
+                              child: Icon(Icons.location_on_rounded, color: theme.colorScheme.primary, size: 20),
+                            ),
+                            const SizedBox(width: AppTheme.spacingMd),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Location', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                  Text(_event!.location, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppTheme.spacingLg),
+
+                  // Description
+                  Text('About Event', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: AppTheme.spacingSm),
+                  Text(
+                    _event!.description,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      height: 1.5,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spacingXl),
+
+                  // Attendees
                   Row(
                     children: [
-                      const Icon(Icons.location_on, color: Colors.white70, size: 16),
-                      const SizedBox(width: 6),
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: theme.colorScheme.primaryContainer,
+                        child: Icon(Icons.people_alt_rounded, size: 16, color: theme.colorScheme.primary),
+                      ),
+                      const SizedBox(width: AppTheme.spacingSm),
                       Text(
-                        _event!.location,
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        '${_event!.registrationCount} attendees going',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Register/Unregister Button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _toggleRegistration,
-                icon: Icon(_isRegistered ? Icons.check_circle : Icons.event_available),
-                label: Text(_isRegistered ? 'Registered' : 'Register for Event'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: _isRegistered
-                      ? Colors.grey[700]
-                      : theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Event Info
-            Text('Description', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(_event!.description, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 20),
-
-            Row(
-              children: [
-                Icon(Icons.people, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  '${_event!.registrationCount} attendees registered',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spacingMd),
+          child: _isRegistered
+              ? AppButton.secondary(
+                  text: 'Cancel Registration',
+                  icon: Icons.check_circle_rounded,
+                  isLoading: _isActionLoading,
+                  onPressed: _toggleRegistration,
+                )
+              : AppButton.primary(
+                  text: 'Register Now',
+                  isLoading: _isActionLoading,
+                  onPressed: _toggleRegistration,
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackHero(ThemeData theme) {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        gradient: AppTheme.primaryGradient,
+      ),
+      child: Center(
+        child: Icon(Icons.event_note_rounded, size: 64, color: Colors.white.withValues(alpha: 0.2)),
       ),
     );
   }

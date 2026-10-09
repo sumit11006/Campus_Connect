@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 import '../../providers/lost_found_provider.dart';
+import '../../design_system/app_card.dart';
+import '../../design_system/app_button.dart';
 
 class LostFoundScreen extends ConsumerStatefulWidget {
   const LostFoundScreen({super.key});
@@ -42,45 +46,46 @@ class _LostFoundScreenState extends ConsumerState<LostFoundScreen>
     final descCtrl = TextEditingController();
     final locationCtrl = TextEditingController();
     String selectedType = _currentType;
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppTheme.radiusXl)),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) => Padding(
           padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            left: AppTheme.spacingLg,
+            right: AppTheme.spacingLg,
+            top: AppTheme.spacingLg,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppTheme.spacingLg,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Report Item',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppTheme.spacingLg),
               Row(
                 children: [
                   Expanded(
                     child: ChoiceChip(
-                      label: const Text('Lost'),
+                      label: const Center(child: Text('Lost')),
                       selected: selectedType == 'lost',
                       onSelected: (_) =>
                           setSheetState(() => selectedType = 'lost'),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppTheme.spacingSm),
                   Expanded(
                     child: ChoiceChip(
-                      label: const Text('Found'),
+                      label: const Center(child: Text('Found')),
                       selected: selectedType == 'found',
                       onSelected: (_) =>
                           setSheetState(() => selectedType = 'found'),
@@ -88,27 +93,29 @@ class _LostFoundScreenState extends ConsumerState<LostFoundScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppTheme.spacingMd),
               TextField(
                 controller: itemNameCtrl,
                 decoration: const InputDecoration(labelText: 'Item Name'),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppTheme.spacingMd),
               TextField(
                 controller: locationCtrl,
                 decoration: const InputDecoration(
                     labelText: 'Location (e.g. Library 2nd Floor)'),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppTheme.spacingMd),
               TextField(
                 controller: descCtrl,
                 maxLines: 3,
                 decoration: const InputDecoration(labelText: 'Description'),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppTheme.spacingLg),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: AppButton.primary(
+                  text: 'Submit Report',
+                  isLoading: isSubmitting,
                   onPressed: () async {
                     if (itemNameCtrl.text.trim().isEmpty ||
                         locationCtrl.text.trim().isEmpty ||
@@ -119,8 +126,12 @@ class _LostFoundScreenState extends ConsumerState<LostFoundScreen>
                       );
                       return;
                     }
+                    
+                    setSheetState(() {
+                      isSubmitting = true;
+                    });
+                    
                     final messenger = ScaffoldMessenger.of(context);
-                    Navigator.pop(ctx);
                     final success = await ref
                         .read(lostFoundProvider.notifier)
                         .reportItem(
@@ -129,6 +140,11 @@ class _LostFoundScreenState extends ConsumerState<LostFoundScreen>
                           description: descCtrl.text.trim(),
                           location: locationCtrl.text.trim(),
                         );
+                    
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx);
+                    }
+                    
                     messenger.showSnackBar(
                       SnackBar(
                         content: Text(success
@@ -137,7 +153,6 @@ class _LostFoundScreenState extends ConsumerState<LostFoundScreen>
                       ),
                     );
                   },
-                  child: const Text('Submit Report'),
                 ),
               ),
             ],
@@ -157,45 +172,40 @@ class _LostFoundScreenState extends ConsumerState<LostFoundScreen>
         title: const Text('Lost & Found'),
         bottom: TabBar(
           controller: _tabController,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+          indicatorColor: theme.colorScheme.primary,
+          labelStyle: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
           tabs: const [
-            Tab(icon: Icon(Icons.search_off), text: 'Lost Items'),
-            Tab(icon: Icon(Icons.check_circle_outline), text: 'Found Items'),
+            Tab(icon: Icon(Icons.search_off_rounded), text: 'Lost Items'),
+            Tab(icon: Icon(Icons.check_circle_outline_rounded), text: 'Found Items'),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'fab_lostfound',
         onPressed: () => _showReportSheet(context),
-        icon: const Icon(Icons.add_circle_outline),
-        label: const Text('Report'),
+        backgroundColor: theme.colorScheme.primary,
+        icon: Icon(Icons.add, color: theme.colorScheme.onPrimary),
+        label: Text(
+          'Report',
+          style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.w600),
+        ),
       ),
       body: lfState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : lfState.error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(lfState.error!),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () => ref
-                            .read(lostFoundProvider.notifier)
-                            .fetchItems(type: _currentType),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
+              ? _buildErrorState(theme)
               : lfState.items.isEmpty
-                  ? const Center(child: Text('No items reported yet.'))
+                  ? _buildEmptyState(theme, _currentType)
                   : RefreshIndicator(
                       onRefresh: () => ref
                           .read(lostFoundProvider.notifier)
                           .fetchItems(type: _currentType),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(12),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(AppTheme.spacingMd),
                         itemCount: lfState.items.length,
+                        separatorBuilder: (ctx, index) => const SizedBox(height: AppTheme.spacingMd),
                         itemBuilder: (context, index) {
                           final item = lfState.items[index];
                           String imgUrl = '';
@@ -205,100 +215,120 @@ class _LostFoundScreenState extends ConsumerState<LostFoundScreen>
                                 : '${AppConstants.uploadBaseUrl}${item.imageUrl}';
                           }
 
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Image or icon placeholder
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: imgUrl.isNotEmpty
-                                        ? Image.network(
-                                            imgUrl,
-                                            width: 64,
-                                            height: 64,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (e, o, s) =>
-                                                _buildIconPlaceholder(
-                                                    theme, item.type),
-                                          )
-                                        : _buildIconPlaceholder(
-                                            theme, item.type),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                item.itemName,
-                                                style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16),
+                          return AppCard(
+                            padding: const EdgeInsets.all(AppTheme.spacingMd),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Image or icon placeholder
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                  child: imgUrl.isNotEmpty
+                                      ? CachedNetworkImage(
+                                          imageUrl: imgUrl,
+                                          width: 72,
+                                          height: 72,
+                                          fit: BoxFit.cover,
+                                          placeholder: (c, u) => _buildIconPlaceholder(theme, item.type),
+                                          errorWidget: (c, u, e) => _buildIconPlaceholder(theme, item.type),
+                                        )
+                                      : _buildIconPlaceholder(theme, item.type),
+                                ),
+                                const SizedBox(width: AppTheme.spacingMd),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              item.itemName,
+                                              style: theme.textTheme.titleMedium?.copyWith(
+                                                fontWeight: FontWeight.w700,
                                               ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2),
-                                              decoration: BoxDecoration(
+                                          ),
+                                          const SizedBox(width: AppTheme.spacingXs),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: item.type == 'lost'
+                                                  ? theme.colorScheme.errorContainer.withValues(alpha: 0.5)
+                                                  : theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                                              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                                              border: Border.all(
                                                 color: item.type == 'lost'
-                                                    ? Colors.red[100]
-                                                    : Colors.green[100],
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: Text(
-                                                item.type.toUpperCase(),
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: item.type == 'lost'
-                                                      ? Colors.red[700]
-                                                      : Colors.green[700],
-                                                ),
+                                                    ? theme.colorScheme.error.withValues(alpha: 0.2)
+                                                    : theme.colorScheme.primary.withValues(alpha: 0.2),
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.location_on,
-                                                size: 14,
-                                                color: theme
-                                                    .colorScheme.primary),
-                                            const SizedBox(width: 4),
-                                            Text(item.location,
-                                                style:
-                                                    theme.textTheme.bodySmall),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(item.description,
-                                            style:
-                                                theme.textTheme.bodyMedium),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Reported by ${item.reporterName}',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                  color: theme
-                                                      .colorScheme.secondary),
-                                        ),
-                                      ],
-                                    ),
+                                            child: Text(
+                                              item.type.toUpperCase(),
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.5,
+                                                color: item.type == 'lost'
+                                                    ? theme.colorScheme.error
+                                                    : theme.colorScheme.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: AppTheme.spacingSm),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.location_on_rounded,
+                                              size: 14,
+                                              color: theme.colorScheme.onSurfaceVariant),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              item.location,
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: theme.colorScheme.onSurfaceVariant,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: AppTheme.spacingXs),
+                                      Text(
+                                        item.description,
+                                        style: theme.textTheme.bodyMedium,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: AppTheme.spacingMd),
+                                      Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 8,
+                                            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                                            child: Icon(Icons.person_rounded, size: 10, color: theme.colorScheme.onSurfaceVariant),
+                                          ),
+                                          const SizedBox(width: AppTheme.spacingXs),
+                                          Text(
+                                            'Reported by ${item.reporterName}',
+                                            style: theme.textTheme.labelSmall?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           );
                         },
@@ -307,14 +337,70 @@ class _LostFoundScreenState extends ConsumerState<LostFoundScreen>
     );
   }
 
+  Widget _buildEmptyState(ThemeData theme, String type) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            type == 'lost' ? Icons.search_off_rounded : Icons.check_circle_outline_rounded,
+            size: 64,
+            color: theme.colorScheme.outlineVariant,
+          ),
+          const SizedBox(height: AppTheme.spacingMd),
+          Text(
+            'No $type items found',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: AppTheme.spacingXs),
+          Text(
+            type == 'lost' ? 'No items have been reported lost.' : 'No items have been found yet.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingLg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, size: 48, color: theme.colorScheme.error),
+            const SizedBox(height: AppTheme.spacingMd),
+            Text(
+              'Oops! Something went wrong.',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppTheme.spacingLg),
+            AppButton.primary(
+              text: 'Try Again',
+              icon: Icons.refresh_rounded,
+              onPressed: () => ref.read(lostFoundProvider.notifier).fetchItems(type: _currentType),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildIconPlaceholder(ThemeData theme, String type) {
     return Container(
-      width: 64,
-      height: 64,
-      color: theme.colorScheme.primaryContainer,
+      width: 72,
+      height: 72,
+      color: theme.colorScheme.surfaceContainerHighest,
       child: Icon(
-        type == 'lost' ? Icons.search_off : Icons.check_circle_outline,
-        color: theme.colorScheme.primary,
+        type == 'lost' ? Icons.search_off_rounded : Icons.check_circle_outline_rounded,
+        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+        size: 32,
       ),
     );
   }

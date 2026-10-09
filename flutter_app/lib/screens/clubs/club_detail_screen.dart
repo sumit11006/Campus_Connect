@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/club.dart';
 import '../../providers/club_provider.dart';
+import '../../core/theme.dart';
+import '../../design_system/app_button.dart';
+import '../../design_system/app_card.dart';
 
 class ClubDetailScreen extends ConsumerStatefulWidget {
   final String clubId;
@@ -18,6 +22,7 @@ class _ClubDetailScreenState extends ConsumerState<ClubDetailScreen> {
   bool _isMember = false;
   List<ClubMemberItem> _members = [];
   String? _error;
+  bool _isActionLoading = false;
 
   @override
   void initState() {
@@ -54,6 +59,10 @@ class _ClubDetailScreenState extends ConsumerState<ClubDetailScreen> {
     if (_club == null) return;
     final service = ref.read(clubServiceProvider);
 
+    setState(() {
+      _isActionLoading = true;
+    });
+
     try {
       if (_isMember) {
         final newCount = await service.leaveClub(_club!.id);
@@ -88,13 +97,17 @@ class _ClubDetailScreenState extends ConsumerState<ClubDetailScreen> {
           );
         });
       }
-      _loadClubDetails();
+      _loadClubDetails(); // Reload members list
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
         );
       }
+    } finally {
+      setState(() {
+        _isActionLoading = false;
+      });
     }
   }
 
@@ -118,94 +131,188 @@ class _ClubDetailScreenState extends ConsumerState<ClubDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_club!.name),
+        title: const Text('Club Details'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(bottom: AppTheme.spacing2xl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Banner Card
-            Container(
-              height: 140,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.tertiary,
-                  ],
+            // Hero Banner
+            if (_club!.bannerUrl.isNotEmpty)
+              Container(
+                height: 200,
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                  boxShadow: AppTheme.shadowSubtle,
                 ),
-              ),
-              child: Center(
-                child: Text(
-                  _club!.name,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                  child: CachedNetworkImage(
+                    imageUrl: _club!.bannerUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                    errorWidget: (context, url, error) => _buildFallbackHero(theme),
                   ),
                 ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+                child: _buildFallbackHero(theme),
               ),
-            ),
-            const SizedBox(height: 16),
+            
+            const SizedBox(height: AppTheme.spacingLg),
 
-            // Join/Leave Button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _toggleMembership,
-                icon: Icon(_isMember ? Icons.check : Icons.group_add),
-                label: Text(_isMember ? 'Joined' : 'Join Club'),
-                style: FilledButton.styleFrom(
-                  backgroundColor:
-                      _isMember ? Colors.grey[700] : theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Description
-            Text('About', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(_club!.description, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 24),
-
-            // Members Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Members (${_members.length})',
-                    style: theme.textTheme.titleMedium),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _members.length,
-              itemBuilder: (context, index) {
-                final m = _members[index];
-                return ListTile(
-                  leading: CircleAvatar(
+            // Content
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                    ),
                     child: Text(
-                      m.userName.isNotEmpty ? m.userName[0].toUpperCase() : 'M',
+                      _club!.category.toUpperCase(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                  title: Text(m.userName.isNotEmpty ? m.userName : 'Member'),
-                  subtitle: Text(m.userEmail),
-                  trailing: Chip(
-                    label: Text(
-                      m.role,
-                      style: const TextStyle(fontSize: 10),
+                  const SizedBox(height: AppTheme.spacingSm),
+                  Text(
+                    _club!.name,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                );
-              },
+                  const SizedBox(height: AppTheme.spacingSm),
+                  Row(
+                    children: [
+                      Icon(Icons.people_alt_rounded, color: theme.colorScheme.primary, size: 20),
+                      const SizedBox(width: AppTheme.spacingXs),
+                      Text(
+                        '${_club!.memberCount} members',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.spacingLg),
+
+                  // Description
+                  Text('About', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: AppTheme.spacingSm),
+                  Text(
+                    _club!.description,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      height: 1.5,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spacingXl),
+
+                  // Members Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Members (${_members.length})', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.spacingMd),
+                  if (_members.isEmpty)
+                    const Text('No members yet.')
+                  else
+                    AppCard(
+                      padding: EdgeInsets.zero,
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _members.length,
+                        separatorBuilder: (context, index) => Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2)),
+                        itemBuilder: (context, index) {
+                          final m = _members[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              child: Text(
+                                m.userName.isNotEmpty ? m.userName[0].toUpperCase() : 'M',
+                                style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            title: Text(
+                              m.userName.isNotEmpty ? m.userName : 'Member',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(m.userEmail, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: m.role == 'coordinator' ? theme.colorScheme.tertiaryContainer : theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                              ),
+                              child: Text(
+                                m.role.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: m.role == 'coordinator' ? theme.colorScheme.onTertiaryContainer : theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppTheme.spacingMd),
+          child: _isMember
+              ? AppButton.secondary(
+                  text: 'Leave Club',
+                  icon: Icons.check_circle_rounded,
+                  isLoading: _isActionLoading,
+                  onPressed: _toggleMembership,
+                )
+              : AppButton.primary(
+                  text: 'Join Club',
+                  isLoading: _isActionLoading,
+                  onPressed: _toggleMembership,
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackHero(ThemeData theme) {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.tertiary,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(Icons.groups_rounded, size: 64, color: Colors.white.withValues(alpha: 0.2)),
       ),
     );
   }

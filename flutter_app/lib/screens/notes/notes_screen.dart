@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
+import '../../core/theme.dart';
 import '../../providers/note_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../design_system/app_card.dart';
 
 class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
@@ -83,6 +86,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
   @override
   Widget build(BuildContext context) {
     final noteState = ref.watch(noteProvider);
+    final authState = ref.watch(authProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -95,12 +99,15 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'fab_notes',
-        onPressed: () => _showUploadSheet(context),
-        icon: const Icon(Icons.upload_file),
-        label: const Text('Upload'),
-      ),
+      floatingActionButton: (authState.isAuthenticated && 
+          ['faculty', 'clubAdmin', 'admin'].contains(authState.user?.role))
+          ? FloatingActionButton.extended(
+              heroTag: 'fab_notes',
+              onPressed: () => _showUploadSheet(context),
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Upload'),
+            )
+          : null,
       body: Column(
         children: [
           Padding(
@@ -158,28 +165,31 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
                                         ? note.fileUrl
                                         : '${AppConstants.uploadBaseUrl}${note.fileUrl}';
 
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 8),
+                                return AppCard(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('PDF URL: $fullPdfUrl')),
+                                    );
+                                  },
+                                  padding: const EdgeInsets.all(AppTheme.spacingMd),
                                   child: ListTile(
-                                    contentPadding: const EdgeInsets.all(12),
+                                    contentPadding: EdgeInsets.zero,
                                     leading: Container(
                                       width: 48,
                                       height: 48,
                                       decoration: BoxDecoration(
                                         color: theme.colorScheme.errorContainer,
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                                       ),
                                       child: Icon(Icons.picture_as_pdf,
                                           color: theme.colorScheme.error),
                                     ),
                                     title: Text(
                                       note.title,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                     subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const SizedBox(height: 2),
                                         Text('Subject: ${note.subject}'),

@@ -8,6 +8,8 @@ import UsersPage from './pages/UsersPage';
 import ClubsPage from './pages/ClubsPage';
 import EventsPage from './pages/EventsPage';
 import PostsPage from './pages/PostsPage';
+import NotesPage from './pages/NotesPage';
+import LostFoundPage from './pages/LostFoundPage';
 import SettingsPage from './pages/SettingsPage';
 import './App.css';
 
@@ -101,6 +103,8 @@ function AuthenticatedShell({ user, theme, themeLabels, cycleTheme, handleLogout
               <Route path="/clubs"     element={<ClubsPage />} />
               <Route path="/events"    element={<EventsPage />} />
               <Route path="/posts"     element={<PostsPage />} />
+              <Route path="/notes"     element={<NotesPage />} />
+              <Route path="/lostfound" element={<LostFoundPage />} />
               <Route path="/settings"  element={<SettingsPage />} />
               <Route path="*"          element={<Navigate to="/dashboard" replace />} />
             </Routes>

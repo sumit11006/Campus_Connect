@@ -26,7 +26,7 @@ const getAllPosts = async (req, res, next) => {
 
     const posts = await Post.find()
       .populate('authorId', 'name email avatarUrl role branch')
-      .sort({ createdAt: -1 })
+      .sort({ isPinned: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -133,6 +133,38 @@ const createPost = async (req, res, next) => {
       message: 'Post created successfully',
       post: pObj,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/posts/:id — Update post
+const updatePost = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+
+    const isOwner = post.authorId.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to edit this post.' });
+    }
+
+    const { content, imageUrl, isPinned, category } = req.body;
+    if (content) post.content = content;
+    if (imageUrl !== undefined) post.imageUrl = imageUrl;
+    
+    // Only admin or faculty can pin or categorize posts as announcements
+    if ((isAdmin || req.user.role === 'faculty')) {
+      if (isPinned !== undefined) post.isPinned = isPinned;
+      if (category !== undefined) post.category = category;
+    }
+
+    await post.save();
+
+    res.status(200).json({ success: true, message: 'Post updated successfully', post });
   } catch (error) {
     next(error);
   }
@@ -279,6 +311,7 @@ module.exports = {
   getAllPosts,
   getPostById,
   createPost,
+  updatePost,
   deletePost,
   toggleLike,
   addComment,

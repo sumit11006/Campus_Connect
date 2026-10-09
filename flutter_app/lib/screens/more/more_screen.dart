@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme.dart';
+import '../../design_system/app_card.dart';
 import '../../providers/auth_provider.dart';
 
 class MoreScreen extends ConsumerWidget {
@@ -47,31 +49,31 @@ class MoreScreen extends ConsumerWidget {
               separatorBuilder: (ctx, i) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final item = items[index];
-                return Card(
-                  child: ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: item.color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
+                return AppCard(
+                      padding: const EdgeInsets.all(AppTheme.spacingMd),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: item.color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          ),
+                          child: Icon(item.icon, color: item.color),
+                        ),
+                        title: Text(
+                          item.label,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(item.subtitle),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        onTap: () => context.push(item.route),
                       ),
-                      child: Icon(item.icon, color: item.color),
-                    ),
-                    title: Text(
-                      item.label,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(item.subtitle),
-                    trailing: Icon(
-                      Icons.chevron_right,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    onTap: () => context.push(item.route),
-                  ),
-                );
+                    );
               },
             ),
           ),

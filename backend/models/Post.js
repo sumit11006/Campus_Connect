@@ -25,6 +25,15 @@ const postSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    category: {
+      type: String,
+      enum: ['general', 'announcement', 'question', 'discussion'],
+      default: 'general',
+    },
   },
   {
     timestamps: true,

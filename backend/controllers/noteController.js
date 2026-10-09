@@ -59,7 +59,30 @@ const createNote = async (req, res, next) => {
   }
 };
 
+// DELETE /api/notes/:id
+const deleteNote = async (req, res, next) => {
+  try {
+    const note = await Note.findById(req.params.id);
+    if (!note) {
+      return res.status(404).json({ success: false, message: 'Note not found' });
+    }
+
+    const isOwner = note.uploaderId.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this note.' });
+    }
+
+    await Note.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ success: true, message: 'Note deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllNotes,
   createNote,
+  deleteNote,
 };
