@@ -27,7 +27,7 @@ describe('Clubs & Events Endpoints', () => {
         name: 'Club Coordinator',
         email: 'clubtest1@example.com',
         password: 'password123',
-        role: 'student',
+        role: 'faculty',
       });
     token = res.body.token;
   });
